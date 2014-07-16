@@ -13,5 +13,6 @@ Just for compare resulst ( and for fun ):
     PML_CP_NNet.html - result of the 'PML_CP_NNet.Rmd' execution
 
 Prediction result is : C A B A A C D B A A D C D A E E A D B B
+
 Accuracy of the Neural net is not so high - 75 % only (
 
