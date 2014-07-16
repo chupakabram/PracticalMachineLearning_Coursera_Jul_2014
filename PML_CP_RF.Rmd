@@ -1,0 +1,111 @@
+---
+title: "Practical Machine Learning - Course Project - NNet using"
+output: html_document
+---
+```{r l1}
+# Practical Machine Learning - Course Project
+
+writeLines("Practical Machine Learning - Course Project - start\n");
+
+#---------------------------------------------------------
+# Load data
+writeLines("Load data...");
+
+# load traning data
+traind_raw = read.csv("pml-training.csv", header = TRUE);
+writeLines(sprintf("Training data set is loaded; rows = %d, columns = %d",nrow(traind_raw), ncol(traind_raw)));
+
+# load target data
+targetd_raw = read.csv("pml-testing.csv", header = TRUE);
+writeLines(sprintf("Target data set is loaded; rows = %d, columns = %d",nrow(targetd_raw), ncol(targetd_raw)));
+
+#---------------------------------------------------------
+# Preprocess data 
+writeLines("Preprocess data...");
+
+# remove all N/A columns from training data
+traindat = traind_raw[,!apply(is.na(traind_raw),2,all)];
+
+# remove all N/A columns from target data
+targetdat = targetd_raw[,!apply(is.na(testd_raw),2,all)];
+
+# remove the 
+#     "X"
+#     "problem_id", 
+#     "user_name",
+#     "raw_timestamp_part_1",
+#     "raw_timestamp_part_2",
+#     "cvtd_timestamp",
+#     "new_window",
+#     "num_window"    columns from both data sets
+columns_to_remove = c("X","problem_id","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window","num_window");
+traindat = traindat[, -which(names(traindat) %in% columns_to_remove)]
+targetdat = targetdat[, -which(names(targetdat) %in% columns_to_remove)]
+
+targetdat$classe <- "X"
+
+# check the both datasets have same columns, if in one only - remove it
+traindat = traindat[, -which(!(names(traindat) %in% names(targetdat)))]
+targetdat = targetdat[, which((names(targetdat) %in% names(traindat)))]
+
+writeLines("After preprocessing:");
+writeLines(sprintf("   Training data set : rows = %d, columns = %d",nrow(traindat), ncol(traindat)));
+writeLines(sprintf("   Target data set   : rows = %d, columns = %d",nrow(targetdat), ncol(targetdat)));
+
+if (!all.equal(names(traindat), names(targetdat))) {
+  writeLines("ERROR - the columns do not match !")
+} else {
+  writeLines("Ok - data sets contain the same columns.")
+}
+
+#---------------------------------------------------------
+# Start the Learning stage
+
+library(caret)
+library(kernlab)
+
+inTrain <- createDataPartition(y = traindat$classe, p = 0.75, list = FALSE)
+training <- traindat[inTrain, ]
+testing <- traindat[-inTrain, ]
+
+set.seed(32343)
+writeLines("\n --- Start training partial model...\n");
+tc <- trainControl("oob", number=10, repeats=10, classProbs=TRUE, savePred=T)
+modelpFit<-train(classe~., data=training, method="rf", trControl=tc, preProc=c("center", "scale"), verbose=TRUE)
+  
+print(modelpFit)
+print(modelpFit$finalModel)
+
+# Self-test the training data
+predictionsTrain<-predict(modelpFit, newdata=training)
+#predictionsTrain
+writeLines("\n --- Self-test - use 'training' data as input:\n");
+print(confusionMatrix(predictionsTrain,training$classe))
+
+# Test of "testing" sample 
+predictionsTest<-predict(modelpFit, newdata=testing)
+#predictionsTest
+writeLines("\n --- Test - use 'testing' sample as input:\n");
+print(confusionMatrix(predictionsTest,testing$classe))
+
+# Build model using all of the "traindat" rows
+writeLines("\n --- Start training full model...\n");
+tc <- trainControl("oob", number=10, repeats=10, classProbs=TRUE, savePred=T)
+modelFit<-train(classe~., data=traindat, method="rf", trControl=tc, preProc=c("center", "scale"), verbose=TRUE)
+
+writeLines("\n --- Full model :\n");
+
+print(modelFit)
+print(modelFit$finalModel)
+
+
+#---------------------------------------------------------
+predictionsRf<-predict(modelFit, newdata=targetdat)
+writeLines("\n --- Solution : \n");
+print(predictionsRf)
+
+#---------------------------------------------------------
+writeLines("\nPractical Machine Learning - Course Project - end");
+```
+
+
